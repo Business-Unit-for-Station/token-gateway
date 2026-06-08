@@ -1,0 +1,116 @@
+name: Fix token.studybp.com TLS certificate
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-cert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install SSH password helper
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Fix Nginx site and Let's Encrypt certificate
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?SSH_HOST is required}"
+          : "${SSH_USERNAME:?SSH_USERNAME is required}"
+          : "${SSH_PASSWORD:?SSH_PASSWORD is required}"
+          SSH_PORT="${SSH_PORT:-22}"
+
+          export SSHPASS="$SSH_PASSWORD"
+          sshpass -e ssh \
+            -p "$SSH_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile=/tmp/token-gateway-known-hosts \
+            "$SSH_USERNAME@$SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+
+          DOMAIN="token.studybp.com"
+          UPSTREAM="http://127.0.0.1:8080"
+          CONF="/etc/nginx/conf.d/${DOMAIN}.conf"
+
+          echo "== Host =="
+          hostname || true
+          echo "== Nginx =="
+          nginx -v 2>&1 || true
+
+          echo "== Detect local upstream =="
+          if curl -fsS --max-time 5 http://127.0.0.1:8080/ >/dev/null 2>&1; then
+            UPSTREAM="http://127.0.0.1:8080"
+          elif curl -fsS --max-time 5 http://127.0.0.1:3000/ >/dev/null 2>&1; then
+            UPSTREAM="http://127.0.0.1:3000"
+          elif curl -fsS --max-time 5 http://127.0.0.1:8000/ >/dev/null 2>&1; then
+            UPSTREAM="http://127.0.0.1:8000"
+          else
+            echo "No common local upstream responded; defaulting to ${UPSTREAM} for Nginx proxy."
+          fi
+          echo "Using upstream: ${UPSTREAM}"
+
+          echo "== Ensure certbot =="
+          if ! command -v certbot >/dev/null 2>&1; then
+            if command -v dnf >/dev/null 2>&1; then
+              dnf install -y certbot python3-certbot-nginx
+            elif command -v yum >/dev/null 2>&1; then
+              yum install -y epel-release || true
+              yum install -y certbot python3-certbot-nginx
+            elif command -v apt-get >/dev/null 2>&1; then
+              apt-get update
+              apt-get install -y certbot python3-certbot-nginx
+            else
+              echo "Unsupported package manager; certbot is not installed." >&2
+              exit 1
+            fi
+          fi
+          certbot --version || true
+
+          echo "== Write HTTP Nginx server block =="
+          mkdir -p /etc/nginx/conf.d
+          if [ -f "$CONF" ]; then
+            cp "$CONF" "${CONF}.bak.$(date +%Y%m%d%H%M%S)"
+          fi
+          cat > "$CONF" <<EOF
+server {
+    listen 80;
+    server_name ${DOMAIN};
+
+    client_max_body_size 50m;
+
+    location / {
+        proxy_pass ${UPSTREAM};
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+EOF
+
+          nginx -t
+          systemctl reload nginx || nginx -s reload
+
+          echo "== Issue/install Let's Encrypt certificate =="
+          certbot --nginx \
+            -d "$DOMAIN" \
+            --non-interactive \
+            --agree-tos \
+            --register-unsafely-without-email \
+            --redirect
+
+          nginx -t
+          systemctl reload nginx || nginx -s reload
+
+          echo "== Verify certificate =="
+          echo | openssl s_client -connect "${DOMAIN}:443" -servername "$DOMAIN" 2>/dev/null \
+            | openssl x509 -noout -subject -issuer -dates -ext subjectAltName
+REMOTE
