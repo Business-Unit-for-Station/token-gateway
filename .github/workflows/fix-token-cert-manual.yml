@@ -1,0 +1,31 @@
+name: Fix token.studybp.com certificate manual
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix-cert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Fix certificate on server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          REMOTE_SCRIPT_B64: IyEvdXNyL2Jpbi9lbnYgYmFzaApzZXQgLWV1byBwaXBlZmFpbApET01BSU49InRva2VuLnN0dWR5YnAuY29tIgpVUFNUUkVBTT0iaHR0cDovLzEyNy4wLjAuMTo4MDgwIgpDT05GPSIvZXRjL25naW54L2NvbmYuZC8ke0RPTUFJTn0uY29uZiIKCmVjaG8gIj09IEhvc3QgPT0iCmhvc3RuYW1lIHx8IHRydWUKZWNobyAiPT0gTmdpbnggPT0iCm5naW54IC12IDI+JjEgfHwgdHJ1ZQoKZWNobyAiPT0gRGV0ZWN0IGxvY2FsIHVwc3RyZWFtID09IgppZiBjdXJsIC1mc1MgLS1tYXgtdGltZSA1IGh0dHA6Ly8xMjcuMC4wLjE6ODA4MC8gPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgVVBTVFJFQU09Imh0dHA6Ly8xMjcuMC4wLjE6ODA4MCIKZWxpZiBjdXJsIC1mc1MgLS1tYXgtdGltZSA1IGh0dHA6Ly8xMjcuMC4wLjE6MzAwMC8gPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgVVBTVFJFQU09Imh0dHA6Ly8xMjcuMC4wLjE6MzAwMCIKZWxpZiBjdXJsIC1mc1MgLS1tYXgtdGltZSA1IGh0dHA6Ly8xMjcuMC4wLjE6ODAwMC8gPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgVVBTVFJFQU09Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCIKZWxzZQogIGVjaG8gIk5vIGNvbW1vbiBsb2NhbCB1cHN0cmVhbSByZXNwb25kZWQ7IGRlZmF1bHRpbmcgdG8gJHtVUFNUUkVBTX0gZm9yIE5naW54IHByb3h5LiIKZmkKZWNobyAiVXNpbmcgdXBzdHJlYW06ICR7VVBTVFJFQU19IgoKZWNobyAiPT0gRW5zdXJlIGNlcnRib3QgPT0iCmlmICEgY29tbWFuZCAtdiBjZXJ0Ym90ID4vZGV2L251bGwgMj4mMTsgdGhlbgogIGlmIGNvbW1hbmQgLXYgZG5mID4vZGV2L251bGwgMj4mMTsgdGhlbgogICAgZG5mIGluc3RhbGwgLXkgY2VydGJvdCBweXRob24zLWNlcnRib3QtbmdpbngKICBlbGlmIGNvbW1hbmQgLXYgeXVtID4vZGV2L251bGwgMj4mMTsgdGhlbgogICAgeXVtIGluc3RhbGwgLXkgZXBlbC1yZWxlYXNlIHx8IHRydWUKICAgIHl1bSBpbnN0YWxsIC15IGNlcnRib3QgcHl0aG9uMy1jZXJ0Ym90LW5naW54CiAgZWxpZiBjb21tYW5kIC12IGFwdC1nZXQgPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgICBhcHQtZ2V0IHVwZGF0ZQogICAgYXB0LWdldCBpbnN0YWxsIC15IGNlcnRib3QgcHl0aG9uMy1jZXJ0Ym90LW5naW54CiAgZWxzZQogICAgZWNobyAiVW5zdXBwb3J0ZWQgcGFja2FnZSBtYW5hZ2VyOyBjZXJ0Ym90IGlzIG5vdCBpbnN0YWxsZWQuIiA+JjIKICAgIGV4aXQgMQogIGZpCmZpCmNlcnRib3QgLS12ZXJzaW9uIHx8IHRydWUKCmVjaG8gIj09IFdyaXRlIEhUVFAgTmdpbnggc2VydmVyIGJsb2NrID09Igpta2RpciAtcCAvZXRjL25naW54L2NvbmYuZAppZiBbIC1mICIkQ09ORiIgXTsgdGhlbgogIGNwICIkQ09ORiIgIiR7Q09ORn0uYmFrLiQoZGF0ZSArJVklbSVkJUglTSVTKSIKZmkKY2F0ID4gIiRDT05GIiA8PEVPRgpzZXJ2ZXIgewogICAgbGlzdGVuIDgwOwogICAgc2VydmVyX25hbWUgJHtET01BSU59OwoKICAgIGNsaWVudF9tYXhfYm9keV9zaXplIDUwbTsKCiAgICBsb2NhdGlvbiAvIHsKICAgICAgICBwcm94eV9wYXNzICR7VVBTVFJFQU19OwogICAgICAgIHByb3h5X2h0dHBfdmVyc2lvbiAxLjE7CiAgICAgICAgcHJveHlfc2V0X2hlYWRlciBIb3N0IFwkaG9zdDsKICAgICAgICBwcm94eV9zZXRfaGVhZGVyIFgtUmVhbC1JUCBcJHJlbW90ZV9hZGRyOwogICAgICAgIHByb3h5X3NldF9oZWFkZXIgWC1Gb3J3YXJkZWQtRm9yIFwkcHJveHlfYWRkX3hfZm9yd2FyZGVkX2ZvcjsKICAgICAgICBwcm94eV9zZXRfaGVhZGVyIFgtRm9yd2FyZGVkLVByb3RvIFwkc2NoZW1lOwogICAgICAgIHByb3h5X3NldF9oZWFkZXIgVXBncmFkZSBcJGh0dHBfdXBncmFkZTsKICAgICAgICBwcm94eV9zZXRfaGVhZGVyIENvbm5lY3Rpb24gInVwZ3JhZGUiOwogICAgfQp9CkVPRgoKbmdpbnggLXQKc3lzdGVtY3RsIHJlbG9hZCBuZ2lueCB8fCBuZ2lueCAtcyByZWxvYWQKCmVjaG8gIj09IElzc3VlL2luc3RhbGwgTGV0J3MgRW5jcnlwdCBjZXJ0aWZpY2F0ZSA9PSIKY2VydGJvdCAtLW5naW54IFwKICAtZCAiJERPTUFJTiIgXAogIC0tbm9uLWludGVyYWN0aXZlIFwKICAtLWFncmVlLXRvcyBcCiAgLS1yZWdpc3Rlci11bnNhZmVseS13aXRob3V0LWVtYWlsIFwKICAtLXJlZGlyZWN0CgpuZ2lueCAtdApzeXN0ZW1jdGwgcmVsb2FkIG5naW54IHx8IG5naW54IC1zIHJlbG9hZAoKZWNobyAiPT0gVmVyaWZ5IGNlcnRpZmljYXRlID09IgplY2hvIHwgb3BlbnNzbCBzX2NsaWVudCAtY29ubmVjdCAiJHtET01BSU59OjQ0MyIgLXNlcnZlcm5hbWUgIiRET01BSU4iIDI+L2Rldi9udWxsIFwKICB8IG9wZW5zc2wgeDUwOSAtbm9vdXQgLXN1YmplY3QgLWlzc3VlciAtZGF0ZXMgLWV4dCBzdWJqZWN0QWx0TmFtZQo=
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?SSH_HOST is required}"
+          : "${SSH_USERNAME:?SSH_USERNAME is required}"
+          : "${SSH_PASSWORD:?SSH_PASSWORD is required}"
+          SSH_PORT="${SSH_PORT:-22}"
+          export SSHPASS="$SSH_PASSWORD"
+          printf '%s' "$REMOTE_SCRIPT_B64" | base64 -d > /tmp/fix-token-studybp-cert.sh
+          sshpass -e scp -P "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-gateway-known-hosts /tmp/fix-token-studybp-cert.sh "$SSH_USERNAME@$SSH_HOST:/tmp/fix-token-studybp-cert.sh"
+          sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-gateway-known-hosts "$SSH_USERNAME@$SSH_HOST" 'bash /tmp/fix-token-studybp-cert.sh'
