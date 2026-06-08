@@ -1,0 +1,27 @@
+name: Rebrand token gateway to FutureTech
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rebrand:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+      - name: Apply FutureTech branding on server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          REMOTE_SCRIPT_B64: IyEvdXNyL2Jpbi9lbnYgYmFzaApzZXQgLWV1byBwaXBlZmFpbApBUFBfRElSPSIvb3B0L3Rva2VuLWdhdGV3YXkvZGVwbG95IgpjZCAiJEFQUF9ESVIiCgplY2hvICI9PSBjb250YWluZXJzID09Igpkb2NrZXIgcHMgLS1mb3JtYXQgJ3RhYmxlIHt7Lk5hbWVzfX1cdHt7LkltYWdlfX1cdHt7LlN0YXR1c319XHR7ey5Qb3J0c319JyB8IHNlZCAtbiAnMSw4MHAnCgplY2hvICI9PSB1cGRhdGUgc2l0ZSBzZXR0aW5ncyBpbiBwb3N0Z3JlcyA9PSIKREJfQ09OVEFJTkVSPSJzdWIyYXBpLXBvc3RncmVzIgppZiAhIGRvY2tlciBwcyAtLWZvcm1hdCAne3suTmFtZXN9fScgfCBncmVwIC1xeCAiJERCX0NPTlRBSU5FUiI7IHRoZW4KICBEQl9DT05UQUlORVI9JChkb2NrZXIgcHMgLS1mb3JtYXQgJ3t7Lk5hbWVzfX0nIHwgZ3JlcCAtRSAncG9zdGdyZXMnIHwgaGVhZCAtMSB8fCB0cnVlKQpmaQppZiBbIC16ICIkREJfQ09OVEFJTkVSIiBdOyB0aGVuCiAgZWNobyAiUG9zdGdyZXMgY29udGFpbmVyIG5vdCBmb3VuZCIgPiYyCiAgZXhpdCAxCmZpCgpzZXQgLWEKLiAuLy5lbnYKc2V0ICthClBHVVNFUj0iJHtQT1NUR1JFU19VU0VSOi1zdWIyYXBpfSIKUEdEQj0iJHtQT1NUR1JFU19EQjotc3ViMmFwaX0iCgpTUUw9IklOU0VSVCBJTlRPIHNldHRpbmdzIChrZXksIHZhbHVlLCB1cGRhdGVkX2F0KSBWQUxVRVMgKCdzaXRlX25hbWUnLCdGdXR1cmVUZWNoJyxOT1coKSksICgnc2l0ZV9zdWJ0aXRsZScsJ0FJIEFQSSBHYXRld2F5IFBsYXRmb3JtJyxOT1coKSkgT04gQ09ORkxJQ1QgKGtleSkgRE8gVVBEQVRFIFNFVCB2YWx1ZSA9IEVYQ0xVREVELnZhbHVlLCB1cGRhdGVkX2F0ID0gTk9XKCk7IFNFTEVDVCBrZXksdmFsdWUgRlJPTSBzZXR0aW5ncyBXSEVSRSBrZXkgSU4gKCdzaXRlX25hbWUnLCdzaXRlX3N1YnRpdGxlJykgT1JERVIgQlkga2V5OyIKZG9ja2VyIGV4ZWMgLWUgUEdQQVNTV09SRD0iJFBPU1RHUkVTX1BBU1NXT1JEIiAiJERCX0NPTlRBSU5FUiIgcHNxbCAtVSAiJFBHVVNFUiIgLWQgIiRQR0RCIiAtdiBPTl9FUlJPUl9TVE9QPTEgLWMgIiRTUUwiCgplY2hvICI9PSByZXN0YXJ0IGFwcCB0byBjbGVhciBjYWNoZWQgc2V0dGluZ3MgPT0iCmlmIGRvY2tlciBjb21wb3NlIHZlcnNpb24gPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgZG9ja2VyIGNvbXBvc2UgLWYgZG9ja2VyLWNvbXBvc2UueW1sIC0tZW52LWZpbGUgLmVudiByZXN0YXJ0IHN1YjJhcGkKZWxzZQogIGRvY2tlci1jb21wb3NlIC1mIGRvY2tlci1jb21wb3NlLnltbCAtLWVudi1maWxlIC5lbnYgcmVzdGFydCBzdWIyYXBpCmZpCgpmb3IgaSBpbiAkKHNlcSAxIDYwKTsgZG8KICBpZiBjdXJsIC1mc1MgLS1tYXgtdGltZSA1IGh0dHA6Ly8xMjcuMC4wLjE6ODA4MC8gPi9kZXYvbnVsbCAyPiYxOyB0aGVuCiAgICBlY2hvICJsb2NhbCBzZXJ2aWNlIGlzIHVwIgogICAgYnJlYWsKICBmaQogIGlmIFsgIiRpIiA9IDYwIF07IHRoZW4KICAgIGVjaG8gImxvY2FsIHNlcnZpY2UgZGlkIG5vdCBiZWNvbWUgaGVhbHRoeSIgPiYyCiAgICBkb2NrZXIgbG9ncyAtLXRhaWwgMTIwIHN1YjJhcGkgMj4mMSB8fCB0cnVlCiAgICBleGl0IDEKICBmaQogIHNsZWVwIDIKZG9uZQoKY3VybCAtc1MgLS1tYXgtdGltZSAxMCBodHRwOi8vMTI3LjAuMC4xOjgwODAvIHwgc2VkIC1uICcxLDMwcCcK
+        run: |
+          set -euo pipefail
+          SSH_PORT="${SSH_PORT:-22}"
+          export SSHPASS="$SSH_PASSWORD"
+          printf '%s' "$REMOTE_SCRIPT_B64" | base64 -d > /tmp/rebrand-token-gateway.sh
+          sshpass -e scp -P "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-known-hosts /tmp/rebrand-token-gateway.sh "$SSH_USERNAME@$SSH_HOST:/tmp/rebrand-token-gateway.sh"
+          sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-known-hosts "$SSH_USERNAME@$SSH_HOST" 'bash /tmp/rebrand-token-gateway.sh'
