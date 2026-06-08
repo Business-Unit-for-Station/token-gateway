@@ -1,0 +1,27 @@
+name: Diagnose token.studybp.com 502
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+      - name: Run remote diagnosis
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          REMOTE_SCRIPT_B64: IyEvdXNyL2Jpbi9lbnYgYmFzaApzZXQgLWV1byBwaXBlZmFpbApET01BSU49InRva2VuLnN0dWR5YnAuY29tIgpDT05GPSIvZXRjL25naW54L2NvbmYuZC8ke0RPTUFJTn0uY29uZiIKCmVjaG8gIiMjIGJhc2ljIgpkYXRlCmhvc3RuYW1lCndob2FtaQoKcHJpbnRmICdcbiMjIG5naW54IGNvbmZcbicKaWYgWyAtZiAiJENPTkYiIF07IHRoZW4gc2VkIC1uICcxLDIyMHAnICIkQ09ORiI7IGVsc2UgZWNobyAibWlzc2luZyAkQ09ORiI7IGZpCgpwcmludGYgJ1xuIyMgbmdpbnggdGVzdFxuJwpuZ2lueCAtdCB8fCB0cnVlCgpwcmludGYgJ1xuIyMgbGlzdGVuaW5nIHBvcnRzXG4nCihzcyAtbG50cCB8fCBuZXRzdGF0IC1sbnRwIHx8IHRydWUpIDI+L2Rldi9udWxsIHwgc2VkIC1uICcxLDEyMHAnCgpwcmludGYgJ1xuIyMgZG9ja2VyIHBzXG4nCmRvY2tlciBwcyAtYSAtLWZvcm1hdCAndGFibGUge3suTmFtZXN9fVx0e3suSW1hZ2V9fVx0e3suU3RhdHVzfX1cdHt7LlBvcnRzfX0nIHx8IHRydWUKCnByaW50ZiAnXG4jIyBjb21wb3NlIGZpbGVzIGNhbmRpZGF0ZXNcbicKZmluZCAvcm9vdCAvb3B0IC9zcnYgL2RhdGEgLW1heGRlcHRoIDQgXCggLW5hbWUgJ2RvY2tlci1jb21wb3NlLnltbCcgLW8gLW5hbWUgJ2RvY2tlci1jb21wb3NlLnlhbWwnIC1vIC1uYW1lICdjb21wb3NlLnltbCcgLW8gLW5hbWUgJ2NvbXBvc2UueWFtbCcgXCkgMj4vZGV2L251bGwgfCBzZWQgLW4gJzEsMTAwcCcKCnByaW50ZiAnXG4jIyB0b2tlbiBkaXJzIGNhbmRpZGF0ZXNcbicKZmluZCAvcm9vdCAvb3B0IC9zcnYgL2RhdGEgLW1heGRlcHRoIDMgLXR5cGUgZCBcKCAtaW5hbWUgJyp0b2tlbionIC1vIC1pbmFtZSAnKnN1YjJhcGkqJyBcKSAyPi9kZXYvbnVsbCB8IHNlZCAtbiAnMSwxMDBwJwoKcHJpbnRmICdcbiMjIGxvY2FsIGh0dHAgcHJvYmVzXG4nCmZvciBwb3J0IGluIDgwODAgMzAwMCA4MDAwIDgwODEgOTAwMCA1MTczIDgwOyBkbwogIGVjaG8gIi0tIDEyNy4wLjAuMTokcG9ydCIKICBjdXJsIC1zUyAtSSAtLW1heC10aW1lIDMgImh0dHA6Ly8xMjcuMC4wLjE6JHBvcnQvIiB8fCB0cnVlCiAgZWNobwogZG9uZQoKcHJpbnRmICdcbiMjIGRvY2tlciBsb2dzIGxpa2VseSBjb250YWluZXJzXG4nCmZvciBjIGluICQoZG9ja2VyIHBzIC1hIC0tZm9ybWF0ICd7ey5OYW1lc319JyB8IGdyZXAgLUVpICdzdWIyYXBpfHRva2VufGdhdGV3YXl8cG9zdGdyZXN8cmVkaXMnIHx8IHRydWUpOyBkbwogIGVjaG8gIiMjIyAkYyIKICBkb2NrZXIgbG9ncyAtLXRhaWwgODAgIiRjIiAyPiYxIHwgc2VkIC1uICcxLDEyMHAnIHx8IHRydWUKIGRvbmUK
+        run: |
+          set -euo pipefail
+          SSH_PORT="${SSH_PORT:-22}"
+          export SSHPASS="$SSH_PASSWORD"
+          printf '%s' "$REMOTE_SCRIPT_B64" | base64 -d > /tmp/diagnose-token-502.sh
+          sshpass -e scp -P "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-known-hosts /tmp/diagnose-token-502.sh "$SSH_USERNAME@$SSH_HOST:/tmp/diagnose-token-502.sh"
+          sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-known-hosts "$SSH_USERNAME@$SSH_HOST" 'bash /tmp/diagnose-token-502.sh'
