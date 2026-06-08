@@ -1,6 +1,6 @@
 name: Fix token.studybp.com TLS certificate
 
-on:
+'on':
   workflow_dispatch:
 
 jobs:
