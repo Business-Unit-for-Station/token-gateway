@@ -132,8 +132,10 @@ docs/*
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
 !docs/DEPLOY_TENCENT.md
+!docs/stripe-provider-instance.example.json
 .serena/
 .codex/
 frontend/coverage/
 aicodex
 output/
+local/

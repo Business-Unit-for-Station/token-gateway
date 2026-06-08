@@ -1,0 +1,81 @@
+{
+  "purpose": "Stripe provider instance example for token-gateway. Use placeholder values only; do not commit real secret keys.",
+  "payment_config_api": {
+    "method": "PUT",
+    "path": "/api/v1/admin/payment/config",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-api-key": "admin_<your_admin_api_key>"
+    },
+    "body": {
+      "enabled": true,
+      "enabled_payment_types": [
+        "stripe"
+      ],
+      "min_amount": 1,
+      "max_amount": 0,
+      "daily_limit": 0,
+      "order_timeout_minutes": 30,
+      "max_pending_orders": 3,
+      "balance_disabled": false,
+      "balance_recharge_multiplier": 1,
+      "recharge_fee_rate": 0,
+      "load_balance_strategy": "round-robin",
+      "product_name_prefix": "Token Gateway",
+      "product_name_suffix": "Credits"
+    }
+  },
+  "admin_api": {
+    "method": "POST",
+    "path": "/api/v1/admin/payment/providers",
+    "headers": {
+      "Content-Type": "application/json",
+      "x-api-key": "admin_<your_admin_api_key>"
+    },
+    "body": {
+      "provider_key": "stripe",
+      "name": "Stripe",
+      "config": {
+        "secretKey": "sk_test_xxxxxxxxxxxxxxxxxxxxx",
+        "publishableKey": "pk_test_xxxxxxxxxxxxxxxxxxxxx",
+        "webhookSecret": "whsec_xxxxxxxxxxxxxxxxxxxxx",
+        "currency": "USD"
+      },
+      "supported_types": [
+        "card",
+        "alipay",
+        "wxpay",
+        "link"
+      ],
+      "enabled": true,
+      "payment_mode": "",
+      "sort_order": 30,
+      "limits": "{\"stripe\":{\"min_amount\":1,\"max_amount\":0,\"daily_limit\":0,\"fee_rate\":0}}",
+      "refund_enabled": true,
+      "allow_user_refund": false
+    }
+  },
+  "database_shape": {
+    "table": "payment_provider_instances",
+    "note": "The application encrypts config before saving it. Prefer the admin API or admin UI instead of inserting plaintext config directly.",
+    "row": {
+      "provider_key": "stripe",
+      "name": "Stripe",
+      "config": "{\"secretKey\":\"sk_test_xxxxxxxxxxxxxxxxxxxxx\",\"publishableKey\":\"pk_test_xxxxxxxxxxxxxxxxxxxxx\",\"webhookSecret\":\"whsec_xxxxxxxxxxxxxxxxxxxxx\",\"currency\":\"USD\"}",
+      "supported_types": "card,alipay,wxpay,link",
+      "enabled": true,
+      "payment_mode": "",
+      "sort_order": 30,
+      "limits": "{\"stripe\":{\"min_amount\":1,\"max_amount\":0,\"daily_limit\":0,\"fee_rate\":0}}",
+      "refund_enabled": true,
+      "allow_user_refund": false
+    }
+  },
+  "stripe_dashboard": {
+    "webhook_endpoint": "https://<your-domain>/api/v1/payment/webhook/stripe",
+    "events": [
+      "payment_intent.succeeded",
+      "payment_intent.payment_failed"
+    ]
+  }
+}
