@@ -2,6 +2,10 @@ name: Persist token.studybp.com Stripe config
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/persist-token-studybp-stripe.yml'
 
 jobs:
   persist-stripe:
@@ -53,7 +57,7 @@ jobs:
             docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$DB_CONTAINER" psql -U "$PGUSER" -d "$PGDB" -v ON_ERROR_STOP=1 -q -c "INSERT INTO settings (key, value, updated_at) VALUES ('admin_api_key', '$ADMIN_KEY', NOW()) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();" >/dev/null
           fi
           printf '%s' "$ADMIN_KEY"
-REMOTE
+          REMOTE
 
           ADMIN_KEY=$(sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-studybp-known-hosts "$SSH_USERNAME@$SSH_HOST" 'bash -s' < /tmp/read-admin-key.sh)
           if [ -z "$ADMIN_KEY" ]; then
@@ -62,15 +66,15 @@ REMOTE
           fi
 
           python3 - <<'PY' > /tmp/provider.json
-import os, json
-obj=json.loads(os.environ['PROVIDER_BODY_JSON'])
-print(json.dumps(obj, ensure_ascii=False, separators=(',',':')))
-PY
+          import os, json
+          obj=json.loads(os.environ['PROVIDER_BODY_JSON'])
+          print(json.dumps(obj, ensure_ascii=False, separators=(',',':')))
+          PY
           python3 - <<'PY' > /tmp/payment-config.json
-import os, json
-obj=json.loads(os.environ['PAYMENT_CONFIG_BODY_JSON'])
-print(json.dumps(obj, ensure_ascii=False, separators=(',',':')))
-PY
+          import os, json
+          obj=json.loads(os.environ['PAYMENT_CONFIG_BODY_JSON'])
+          print(json.dumps(obj, ensure_ascii=False, separators=(',',':')))
+          PY
 
           provider_status=$(curl -sS -o /tmp/provider-response.json -w '%{http_code}' \
             -X POST 'https://token.studybp.com/api/v1/admin/payment/providers' \
@@ -80,14 +84,14 @@ PY
           echo "provider_status=$provider_status"
           if [ "$provider_status" -lt 200 ] || [ "$provider_status" -ge 300 ]; then
             python3 - <<'PY'
-import json, pathlib
-raw=pathlib.Path('/tmp/provider-response.json').read_text(errors='replace')[:1000]
-try:
-    obj=json.loads(raw)
-    print('provider_error_code=' + str(obj.get('code') or obj.get('error') or obj.get('message') or 'unknown'))
-except Exception:
-    print('provider_error_unparseable')
-PY
+            import json, pathlib
+            raw=pathlib.Path('/tmp/provider-response.json').read_text(errors='replace')[:1000]
+            try:
+                obj=json.loads(raw)
+                print('provider_error_code=' + str(obj.get('code') or obj.get('error') or obj.get('message') or 'unknown'))
+            except Exception:
+                print('provider_error_unparseable')
+            PY
             exit 1
           fi
 
@@ -99,14 +103,14 @@ PY
           echo "config_status=$config_status"
           if [ "$config_status" -lt 200 ] || [ "$config_status" -ge 300 ]; then
             python3 - <<'PY'
-import json, pathlib
-raw=pathlib.Path('/tmp/config-response.json').read_text(errors='replace')[:1000]
-try:
-    obj=json.loads(raw)
-    print('config_error_code=' + str(obj.get('code') or obj.get('error') or obj.get('message') or 'unknown'))
-except Exception:
-    print('config_error_unparseable')
-PY
+            import json, pathlib
+            raw=pathlib.Path('/tmp/config-response.json').read_text(errors='replace')[:1000]
+            try:
+                obj=json.loads(raw)
+                print('config_error_code=' + str(obj.get('code') or obj.get('error') or obj.get('message') or 'unknown'))
+            except Exception:
+                print('config_error_unparseable')
+            PY
             exit 1
           fi
 
@@ -114,17 +118,16 @@ PY
             'https://token.studybp.com/api/v1/payment/config')
           echo "public_payment_config_status=$verify_status"
           python3 - <<'PY'
-import json, pathlib
-raw=pathlib.Path('/tmp/payment-public-config.json').read_text(errors='replace')
-try:
-    obj=json.loads(raw)
-except Exception:
-    print('verify_json=false')
-    raise SystemExit(0)
-# handle common response wrappers
-data=obj.get('data', obj) if isinstance(obj, dict) else {}
-print('verify_json=true')
-print('payment_enabled=' + str(data.get('enabled')))
-print('enabled_payment_types=' + ','.join(map(str, data.get('enabled_payment_types') or [])))
-print('stripe_publishable_key_present=' + str(bool(data.get('stripe_publishable_key'))))
-PY
+          import json, pathlib
+          raw=pathlib.Path('/tmp/payment-public-config.json').read_text(errors='replace')
+          try:
+              obj=json.loads(raw)
+          except Exception:
+              print('verify_json=false')
+              raise SystemExit(0)
+          data=obj.get('data', obj) if isinstance(obj, dict) else {}
+          print('verify_json=true')
+          print('payment_enabled=' + str(data.get('enabled')))
+          print('enabled_payment_types=' + ','.join(map(str, data.get('enabled_payment_types') or [])))
+          print('stripe_publishable_key_present=' + str(bool(data.get('stripe_publishable_key'))))
+          PY
