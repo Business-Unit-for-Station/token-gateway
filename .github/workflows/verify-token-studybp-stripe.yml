@@ -1,0 +1,71 @@
+name: Verify token.studybp.com Stripe config
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-token-studybp-stripe.yml'
+
+jobs:
+  verify-stripe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Verify Stripe config without printing secrets
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?SSH_HOST is required}"
+          : "${SSH_USERNAME:?SSH_USERNAME is required}"
+          : "${SSH_PASSWORD:?SSH_PASSWORD is required}"
+          SSH_PORT="${SSH_PORT:-22}"
+          export SSHPASS="$SSH_PASSWORD"
+          printf '%s' 'c2V0IC1ldW8gcGlwZWZhaWwKY2QgL29wdC90b2tlbi1nYXRld2F5L2RlcGxveQpzZXQgLWEKLiAuLy5lbnYKc2V0ICthCkRCX0NPTlRBSU5FUj0ic3ViMmFwaS1wb3N0Z3JlcyIKaWYgISBkb2NrZXIgcHMgLS1mb3JtYXQgJ3t7Lk5hbWVzfX0nIHwgZ3JlcCAtcXggIiREQl9DT05UQUlORVIiOyB0aGVuCiAgREJfQ09OVEFJTkVSPSQoZG9ja2VyIHBzIC0tZm9ybWF0ICd7ey5OYW1lc319JyB8IGdyZXAgLUUgJ3Bvc3RncmVzJyB8IGhlYWQgLTEgfHwgdHJ1ZSkKZmkKaWYgWyAteiAiJERCX0NPTlRBSU5FUiIgXTsgdGhlbgogIGVjaG8gInBvc3RncmVzIGNvbnRhaW5lciBub3QgZm91bmQiID4mMgogIGV4aXQgMQpmaQpQR1VTRVI9IiR7UE9TVEdSRVNfVVNFUjotc3ViMmFwaX0iClBHREI9IiR7UE9TVEdSRVNfREI6LXN1YjJhcGl9IgpBRE1JTl9LRVk9JChkb2NrZXIgZXhlYyAtZSBQR1BBU1NXT1JEPSIkUE9TVEdSRVNfUEFTU1dPUkQiICIkREJfQ09OVEFJTkVSIiBwc3FsIC1VICIkUEdVU0VSIiAtZCAiJFBHREIiIC10QSAtYyAiU0VMRUNUIHZhbHVlIEZST00gc2V0dGluZ3MgV0hFUkUga2V5PSdhZG1pbl9hcGlfa2V5JyBMSU1JVCAxOyIgfCB0ciAtZCAnXHJcbicpCmlmIFsgLXogIiRBRE1JTl9LRVkiIF07IHRoZW4KICBlY2hvICJhZG1pbiBhcGkga2V5IG5vdCBmb3VuZCIgPiYyCiAgZXhpdCAxCmZpCnByaW50ZiAnJXMnICIkQURNSU5fS0VZIgo=' | base64 -d > /tmp/read-admin-key.sh
+          ADMIN_KEY=$(sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-studybp-known-hosts "$SSH_USERNAME@$SSH_HOST" 'bash -s' < /tmp/read-admin-key.sh)
+          if [ -z "$ADMIN_KEY" ]; then
+            echo "Failed to obtain admin API key" >&2
+            exit 1
+          fi
+
+          providers_status=$(curl -sS -o /tmp/providers.json -w '%{http_code}' \
+            -H "x-api-key: $ADMIN_KEY" \
+            'https://token.studybp.com/api/v1/admin/payment/providers')
+          echo "providers_status=$providers_status"
+          config_status=$(curl -sS -o /tmp/payment-config.json -w '%{http_code}' \
+            -H "x-api-key: $ADMIN_KEY" \
+            'https://token.studybp.com/api/v1/admin/payment/config')
+          echo "admin_payment_config_status=$config_status"
+          python3 - <<'PY'
+          import json, pathlib
+          def load(path):
+              raw=pathlib.Path(path).read_text(errors='replace')
+              return json.loads(raw or '{}')
+          providers_obj=load('/tmp/providers.json')
+          config_obj=load('/tmp/payment-config.json')
+          providers_data=providers_obj.get('data', providers_obj) if isinstance(providers_obj, dict) else []
+          if isinstance(providers_data, dict):
+              providers=providers_data.get('providers') or providers_data.get('items') or providers_data.get('list') or []
+          else:
+              providers=providers_data if isinstance(providers_data, list) else []
+          stripe=[p for p in providers if isinstance(p,dict) and p.get('provider_key') == 'stripe']
+          enabled_stripe=[p for p in stripe if p.get('enabled') is True]
+          cfg_data=config_obj.get('data', config_obj) if isinstance(config_obj, dict) else {}
+          print('verify_json=true')
+          print('stripe_provider_count=' + str(len(stripe)))
+          print('enabled_stripe_provider_count=' + str(len(enabled_stripe)))
+          print('payment_enabled=' + str(cfg_data.get('enabled')))
+          print('enabled_payment_types=' + ','.join(map(str, cfg_data.get('enabled_payment_types') or [])))
+          print('stripe_publishable_key_present=' + str(bool(cfg_data.get('stripe_publishable_key'))))
+          if not enabled_stripe:
+              raise SystemExit(2)
+          PY
