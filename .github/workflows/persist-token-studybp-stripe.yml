@@ -34,47 +34,15 @@ jobs:
           : "${PAYMENT_CONFIG_BODY_JSON:?TOKEN_GATEWAY_PAYMENT_CONFIG_BODY_JSON is required}"
           SSH_PORT="${SSH_PORT:-22}"
           export SSHPASS="$SSH_PASSWORD"
-
-          cat > /tmp/read-admin-key.sh <<'REMOTE'
-          set -euo pipefail
-          cd /opt/token-gateway/deploy
-          set -a
-          . ./.env
-          set +a
-          DB_CONTAINER="sub2api-postgres"
-          if ! docker ps --format '{{.Names}}' | grep -qx "$DB_CONTAINER"; then
-            DB_CONTAINER=$(docker ps --format '{{.Names}}' | grep -E 'postgres' | head -1 || true)
-          fi
-          if [ -z "$DB_CONTAINER" ]; then
-            echo "postgres container not found" >&2
-            exit 1
-          fi
-          PGUSER="${POSTGRES_USER:-sub2api}"
-          PGDB="${POSTGRES_DB:-sub2api}"
-          ADMIN_KEY=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$DB_CONTAINER" psql -U "$PGUSER" -d "$PGDB" -tA -c "SELECT value FROM settings WHERE key='admin_api_key' LIMIT 1;" | tr -d '\r\n')
-          if [ -z "$ADMIN_KEY" ]; then
-            ADMIN_KEY="admin-$(openssl rand -hex 32)"
-            docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$DB_CONTAINER" psql -U "$PGUSER" -d "$PGDB" -v ON_ERROR_STOP=1 -q -c "INSERT INTO settings (key, value, updated_at) VALUES ('admin_api_key', '$ADMIN_KEY', NOW()) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW();" >/dev/null
-          fi
-          printf '%s' "$ADMIN_KEY"
-          REMOTE
-
+          printf '%s' 'c2V0IC1ldW8gcGlwZWZhaWwKY2QgL29wdC90b2tlbi1nYXRld2F5L2RlcGxveQpzZXQgLWEKLiAuLy5lbnYKc2V0ICthCkRCX0NPTlRBSU5FUj0ic3ViMmFwaS1wb3N0Z3JlcyIKaWYgISBkb2NrZXIgcHMgLS1mb3JtYXQgJ3t7Lk5hbWVzfX0nIHwgZ3JlcCAtcXggIiREQl9DT05UQUlORVIiOyB0aGVuCiAgREJfQ09OVEFJTkVSPSQoZG9ja2VyIHBzIC0tZm9ybWF0ICd7ey5OYW1lc319JyB8IGdyZXAgLUUgJ3Bvc3RncmVzJyB8IGhlYWQgLTEgfHwgdHJ1ZSkKZmkKaWYgWyAteiAiJERCX0NPTlRBSU5FUiIgXTsgdGhlbgogIGVjaG8gInBvc3RncmVzIGNvbnRhaW5lciBub3QgZm91bmQiID4mMgogIGV4aXQgMQpmaQpQR1VTRVI9IiR7UE9TVEdSRVNfVVNFUjotc3ViMmFwaX0iClBHREI9IiR7UE9TVEdSRVNfREI6LXN1YjJhcGl9IgpBRE1JTl9LRVk9JChkb2NrZXIgZXhlYyAtZSBQR1BBU1NXT1JEPSIkUE9TVEdSRVNfUEFTU1dPUkQiICIkREJfQ09OVEFJTkVSIiBwc3FsIC1VICIkUEdVU0VSIiAtZCAiJFBHREIiIC10QSAtYyAiU0VMRUNUIHZhbHVlIEZST00gc2V0dGluZ3MgV0hFUkUga2V5PSdhZG1pbl9hcGlfa2V5JyBMSU1JVCAxOyIgfCB0ciAtZCAnXHJcbicpCmlmIFsgLXogIiRBRE1JTl9LRVkiIF07IHRoZW4KICBBRE1JTl9LRVk9ImFkbWluLSQob3BlbnNzbCByYW5kIC1oZXggMzIpIgogIGRvY2tlciBleGVjIC1lIFBHUEFTU1dPUkQ9IiRQT1NUR1JFU19QQVNTV09SRCIgIiREQl9DT05UQUlORVIiIHBzcWwgLVUgIiRQR1VTRVIiIC1kICIkUEdEQiIgLXYgT05fRVJST1JfU1RPUD0xIC1xIC1jICJJTlNFUlQgSU5UTyBzZXR0aW5ncyAoa2V5LCB2YWx1ZSwgdXBkYXRlZF9hdCkgVkFMVUVTICgnYWRtaW5fYXBpX2tleScsICckQURNSU5fS0VZJywgTk9XKCkpIE9OIENPTkZMSUNUIChrZXkpIERPIFVQREFURSBTRVQgdmFsdWUgPSBFWENMVURFRC52YWx1ZSwgdXBkYXRlZF9hdCA9IE5PVygpOyIgPi9kZXYvbnVsbApmaQpwcmludGYgJyVzJyAiJEFETUlOX0tFWSIK' | base64 -d > /tmp/read-admin-key.sh
           ADMIN_KEY=$(sshpass -e ssh -p "$SSH_PORT" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/tmp/token-studybp-known-hosts "$SSH_USERNAME@$SSH_HOST" 'bash -s' < /tmp/read-admin-key.sh)
           if [ -z "$ADMIN_KEY" ]; then
             echo "Failed to obtain admin API key" >&2
             exit 1
           fi
 
-          python3 - <<'PY' > /tmp/provider.json
-          import os, json
-          obj=json.loads(os.environ['PROVIDER_BODY_JSON'])
-          print(json.dumps(obj, ensure_ascii=False, separators=(',',':')))
-          PY
-          python3 - <<'PY' > /tmp/payment-config.json
-          import os, json
-          obj=json.loads(os.environ['PAYMENT_CONFIG_BODY_JSON'])
-          print(json.dumps(obj, ensure_ascii=False, separators=(',',':')))
-          PY
+          python3 -c 'import os,json; print(json.dumps(json.loads(os.environ["PROVIDER_BODY_JSON"]), ensure_ascii=False, separators=(",",":")))' > /tmp/provider.json
+          python3 -c 'import os,json; print(json.dumps(json.loads(os.environ["PAYMENT_CONFIG_BODY_JSON"]), ensure_ascii=False, separators=(",",":")))' > /tmp/payment-config.json
 
           provider_status=$(curl -sS -o /tmp/provider-response.json -w '%{http_code}' \
             -X POST 'https://token.studybp.com/api/v1/admin/payment/providers' \
@@ -83,15 +51,7 @@ jobs:
             --data-binary @/tmp/provider.json)
           echo "provider_status=$provider_status"
           if [ "$provider_status" -lt 200 ] || [ "$provider_status" -ge 300 ]; then
-            python3 - <<'PY'
-            import json, pathlib
-            raw=pathlib.Path('/tmp/provider-response.json').read_text(errors='replace')[:1000]
-            try:
-                obj=json.loads(raw)
-                print('provider_error_code=' + str(obj.get('code') or obj.get('error') or obj.get('message') or 'unknown'))
-            except Exception:
-                print('provider_error_unparseable')
-            PY
+            python3 -c 'import json,pathlib; raw=pathlib.Path("/tmp/provider-response.json").read_text(errors="replace")[:1000]; print("provider_error_code=" + str((json.loads(raw) if raw else {}).get("code","unknown")))'
             exit 1
           fi
 
@@ -102,32 +62,12 @@ jobs:
             --data-binary @/tmp/payment-config.json)
           echo "config_status=$config_status"
           if [ "$config_status" -lt 200 ] || [ "$config_status" -ge 300 ]; then
-            python3 - <<'PY'
-            import json, pathlib
-            raw=pathlib.Path('/tmp/config-response.json').read_text(errors='replace')[:1000]
-            try:
-                obj=json.loads(raw)
-                print('config_error_code=' + str(obj.get('code') or obj.get('error') or obj.get('message') or 'unknown'))
-            except Exception:
-                print('config_error_unparseable')
-            PY
+            python3 -c 'import json,pathlib; raw=pathlib.Path("/tmp/config-response.json").read_text(errors="replace")[:1000]; print("config_error_code=" + str((json.loads(raw) if raw else {}).get("code","unknown")))'
             exit 1
           fi
 
-          verify_status=$(curl -sS -o /tmp/payment-public-config.json -w '%{http_code}' \
-            'https://token.studybp.com/api/v1/payment/config')
-          echo "public_payment_config_status=$verify_status"
-          python3 - <<'PY'
-          import json, pathlib
-          raw=pathlib.Path('/tmp/payment-public-config.json').read_text(errors='replace')
-          try:
-              obj=json.loads(raw)
-          except Exception:
-              print('verify_json=false')
-              raise SystemExit(0)
-          data=obj.get('data', obj) if isinstance(obj, dict) else {}
-          print('verify_json=true')
-          print('payment_enabled=' + str(data.get('enabled')))
-          print('enabled_payment_types=' + ','.join(map(str, data.get('enabled_payment_types') or [])))
-          print('stripe_publishable_key_present=' + str(bool(data.get('stripe_publishable_key'))))
-          PY
+          verify_status=$(curl -sS -o /tmp/admin-settings.json -w '%{http_code}' \
+            -H "x-api-key: $ADMIN_KEY" \
+            'https://token.studybp.com/api/v1/admin/settings')
+          echo "admin_settings_status=$verify_status"
+          python3 -c 'import json,pathlib; obj=json.loads(pathlib.Path("/tmp/admin-settings.json").read_text(errors="replace") or "{}"); data=obj.get("data", obj) if isinstance(obj,dict) else {}; pc=data.get("payment_config", data.get("payment", {})) if isinstance(data,dict) else {}; print("verify_json=true"); print("payment_enabled=" + str(pc.get("enabled"))); print("enabled_payment_types=" + ",".join(map(str, pc.get("enabled_payment_types") or []))); print("stripe_publishable_key_present=" + str(bool(pc.get("stripe_publishable_key"))))'
