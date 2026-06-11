@@ -5,6 +5,10 @@
 
 import { apiClient } from './client'
 import type { Provider, MonitorStatus } from './admin/channelMonitor'
+import {
+  mockChannelMonitorDetails,
+  mockChannelMonitorList,
+} from '@/mock/userDemoData'
 
 export type { Provider, MonitorStatus } from './admin/channelMonitor'
 
@@ -61,18 +65,30 @@ export interface UserMonitorDetail {
  * List all monitor views available to the current user.
  */
 export async function list(options?: { signal?: AbortSignal }): Promise<UserMonitorListResponse> {
-  const { data } = await apiClient.get<UserMonitorListResponse>('/channel-monitors', {
-    signal: options?.signal,
-  })
-  return data
+  try {
+    const { data } = await apiClient.get<UserMonitorListResponse>('/channel-monitors', {
+      signal: options?.signal,
+    })
+    if (!data.items?.length) return mockChannelMonitorList
+    return data
+  } catch (error) {
+    if (options?.signal?.aborted) throw error
+    console.warn('[demo-mock] Falling back to mock channel monitor list:', error)
+    return mockChannelMonitorList
+  }
 }
 
 /**
  * Get detailed status (multi-window availability + latency) for a single monitor.
  */
 export async function status(id: number): Promise<UserMonitorDetail> {
-  const { data } = await apiClient.get<UserMonitorDetail>(`/channel-monitors/${id}/status`)
-  return data
+  try {
+    const { data } = await apiClient.get<UserMonitorDetail>(`/channel-monitors/${id}/status`)
+    return data
+  } catch (error) {
+    console.warn('[demo-mock] Falling back to mock channel monitor detail:', error)
+    return mockChannelMonitorDetails[id] || mockChannelMonitorDetails[101]
+  }
 }
 
 export const channelMonitorUserAPI = {

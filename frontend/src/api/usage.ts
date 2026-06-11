@@ -4,6 +4,10 @@
  */
 
 import { apiClient } from './client'
+import {
+  mockUsagePage,
+  mockUsageStats,
+} from '@/mock/userDemoData'
 import type {
   UsageLog,
   UsageQueryParams,
@@ -124,11 +128,20 @@ export async function query(
   params: UsageQueryParams & { sort_by?: string; sort_order?: 'asc' | 'desc' },
   config: { signal?: AbortSignal } = {}
 ): Promise<PaginatedResponse<UsageLog>> {
-  const { data } = await apiClient.get<PaginatedResponse<UsageLog>>('/usage', {
-    ...config,
-    params
-  })
-  return data
+  try {
+    const { data } = await apiClient.get<PaginatedResponse<UsageLog>>('/usage', {
+      ...config,
+      params
+    })
+    if (!data.items?.length) {
+      return mockUsagePage(params.page || 1, params.page_size || 20)
+    }
+    return data
+  } catch (error) {
+    if (config.signal?.aborted) throw error
+    console.warn('[demo-mock] Falling back to mock usage logs:', error)
+    return mockUsagePage(params.page || 1, params.page_size || 20)
+  }
 }
 
 /**
@@ -174,10 +187,16 @@ export async function getStatsByDateRange(
     params.api_key_id = apiKeyId
   }
 
-  const { data } = await apiClient.get<UsageStatsResponse>('/usage/stats', {
-    params
-  })
-  return data
+  try {
+    const { data } = await apiClient.get<UsageStatsResponse>('/usage/stats', {
+      params
+    })
+    if (!data.total_requests) return mockUsageStats
+    return data
+  } catch (error) {
+    console.warn('[demo-mock] Falling back to mock usage stats:', error)
+    return mockUsageStats
+  }
 }
 
 /**

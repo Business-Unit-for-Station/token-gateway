@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from './client'
+import { mockApiKeys } from '@/mock/userDemoData'
 import type { ApiKey, CreateApiKeyRequest, UpdateApiKeyRequest, PaginatedResponse } from '@/types'
 
 /**
@@ -28,11 +29,32 @@ export async function list(
     signal?: AbortSignal
   }
 ): Promise<PaginatedResponse<ApiKey>> {
-  const { data } = await apiClient.get<PaginatedResponse<ApiKey>>('/keys', {
-    params: { page, page_size: pageSize, ...filters },
-    signal: options?.signal
-  })
-  return data
+  try {
+    const { data } = await apiClient.get<PaginatedResponse<ApiKey>>('/keys', {
+      params: { page, page_size: pageSize, ...filters },
+      signal: options?.signal
+    })
+    if (!data.items?.length) {
+      return {
+        items: mockApiKeys,
+        total: mockApiKeys.length,
+        page,
+        page_size: pageSize,
+        pages: 1,
+      }
+    }
+    return data
+  } catch (error) {
+    if (options?.signal?.aborted) throw error
+    console.warn('[demo-mock] Falling back to mock API keys:', error)
+    return {
+      items: mockApiKeys,
+      total: mockApiKeys.length,
+      page,
+      page_size: pageSize,
+      pages: 1,
+    }
+  }
 }
 
 /**
