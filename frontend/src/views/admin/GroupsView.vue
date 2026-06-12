@@ -1187,7 +1187,7 @@
         <!-- 账号过滤控制 (OpenAI/Antigravity/Anthropic/Gemini) -->
         <div
           v-if="
-            ['openai', 'antigravity', 'anthropic', 'gemini'].includes(
+            ['openai', 'antigravity', 'anthropic', 'gemini', 'deepseek'].includes(
               createForm.platform,
             )
           "
@@ -2368,7 +2368,7 @@
         <!-- 账号过滤控制 (OpenAI/Antigravity/Anthropic/Gemini) -->
         <div
           v-if="
-            ['openai', 'antigravity', 'anthropic', 'gemini'].includes(
+            ['openai', 'antigravity', 'anthropic', 'gemini', 'deepseek'].includes(
               editForm.platform,
             )
           "
@@ -2923,6 +2923,7 @@ const platformOptions = computed(() => [
   { value: "openai", label: "OpenAI" },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
+  { value: "deepseek", label: "DeepSeek" },
 ]);
 
 const platformFilterOptions = computed(() => [
@@ -2931,6 +2932,7 @@ const platformFilterOptions = computed(() => [
   { value: "openai", label: "OpenAI" },
   { value: "gemini", label: "Gemini" },
   { value: "antigravity", label: "Antigravity" },
+  { value: "deepseek", label: "DeepSeek" },
 ]);
 
 const editStatusOptions = computed(() => [
