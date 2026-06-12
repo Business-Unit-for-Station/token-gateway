@@ -254,8 +254,15 @@ func (s *AccountTestService) buildOpenAIUpstreamModelsRequest(ctx context.Contex
 		)
 	}
 	apiKey := strings.TrimSpace(account.GetOpenAIApiKey())
+	if account.IsDeepSeek() {
+		apiKey = strings.TrimSpace(account.GetCredential("api_key"))
+	}
 	if apiKey == "" {
-		return nil, newUpstreamModelSyncConfigError("No OpenAI API key is available", nil)
+		platformName := "OpenAI"
+		if account.IsDeepSeek() {
+			platformName = "DeepSeek"
+		}
+		return nil, newUpstreamModelSyncConfigError(fmt.Sprintf("No %s API key is available", platformName), nil)
 	}
 
 	baseURL := account.GetOpenAIBaseURL()
