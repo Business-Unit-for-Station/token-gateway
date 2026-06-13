@@ -180,6 +180,24 @@ jobs:
           nginx -t
           systemctl reload nginx || nginx -s reload
 
+          echo "== Wait for app readiness =="
+          while :; do
+            status="$(docker inspect sub2api --format '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' 2>/dev/null || true)"
+            echo "sub2api ${status}"
+            case "$status" in
+              *' healthy'*) break ;;
+              'exited '*|'dead '*|'removing '*)
+                docker logs --tail 200 sub2api || true
+                echo "sub2api did not stay running" >&2
+                exit 1
+                ;;
+            esac
+            if curl -fsS -I http://127.0.0.1:8080/ >/dev/null 2>&1; then
+              break
+            fi
+            sleep 2
+          done
+
           echo "== Final probes =="
           curl -fsS -I http://127.0.0.1:8080/ | sed -n '1,12p'
           curl -fsS -I http://127.0.0.1/ -H "Host: ${DOMAIN}" | sed -n '1,12p'
